@@ -14,13 +14,14 @@ function MIDIPlayer(options) {
   var i;
 
   options = options || {};
-  this.output = options.output || null; // midi output
+  this.outputs = options.outputs || []; // midi output
 
   // if a node-midi output is passed in, the output
   // method is sendMessage, rather than send.
   // https://github.com/justinlatimer/node-midi
-  this.output.send = this.output.send || this.output.sendMessage;
-
+  this.outputs.forEach(output => {
+    output.send = output.send || output.sendMessage;
+  });
   this.volume = options.volume || 100; // volume in percents
   this.startTime = -1; // ms since page load
   this.pauseTime = -1; // ms elapsed before player paused
@@ -77,12 +78,12 @@ MIDIPlayer.prototype.processPlay = function() {
         this.notesOn[event.channel].splice(index, 1);
       }
     }
-    this.output.send(
+    this.outputs.forEach(output => output.send(
       -1 !== MIDIEvents.MIDI_1PARAM_EVENTS.indexOf(event.subtype) ?
       [(event.subtype << 4) + event.channel, event.param1] :
       [(event.subtype << 4) + event.channel, event.param1, (param2 || event.param2 || 0x00)],
       Math.floor(event.playTime + this.startTime)
-    );
+    ));
     this.lastPlayTime = event.playTime + this.startTime;
     this.position++;
     event = this.events[this.position];
@@ -105,8 +106,10 @@ MIDIPlayer.prototype.pause = function() {
     this.pauseTime = performance.now();
     for(i = this.notesOn.length - 1; 0 <= i; i--) {
       for(j = this.notesOn[i].length - 1; 0 <= j; j--) {
-        this.output.send([(MIDIEvents.EVENT_MIDI_NOTE_OFF << 4) + i, this.notesOn[i][j],
-          0x00], this.lastPlayTime + 100);
+        this.outputs.forEach(output =>
+          output.send([(MIDIEvents.EVENT_MIDI_NOTE_OFF << 4) + i, this.notesOn[i][j],
+          0x00], this.lastPlayTime + 100)
+        );
       }
     }
     return true;
