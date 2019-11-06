@@ -3,7 +3,9 @@
 var MIDIEvents = require('midievents');
 
 // load a performance.now implementation if running on node.
-if (global) global.performance = {now: require('performance-now')};
+var performance = (window || global || {}).performance || {};
+if (!performance.now)
+  performance.now = {now: require('performance-now')};
 
 // Constants
 var PLAY_BUFFER_DELAY = 300;
